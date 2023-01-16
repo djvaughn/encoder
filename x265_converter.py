@@ -1,4 +1,3 @@
-from click import command, option, Path as click_path
 from pathlib import Path
 from mkv_converter import MkvMerge
 from subtitler import Subtitler
@@ -49,7 +48,7 @@ def _get_movie_sub(sub_path):
 
 
 
-def _convert_episode(episode, sub_path, output_path):
+def _convert_episode(episode, sub_path, output_path, burn_in_path):
     episode_dict = {
         "path": episode,
         "output_path": output_path.joinpath(episode.name).with_suffix(".mkv"),
@@ -58,6 +57,7 @@ def _convert_episode(episode, sub_path, output_path):
     
     if len(episode_dict["subs"])>1:
         subtitler = Subtitler(episode_dict["subs"][1], episode_dict["subs"][0])
+        episode_dict["output_path"] = burn_in_path.joinpath(episode.name).with_suffix(".mkv")
         subtitler.clean_subs()
         mkv_merge = MkvMerge(episode_dict)
         mkv_merge.burn_in_convert()
@@ -66,7 +66,7 @@ def _convert_episode(episode, sub_path, output_path):
         mkv_merge.convert()
 
 
-def _folder_media_search(media_dict, output_path:Path):
+def _folder_media_search(media_dict, output_path:Path, burn_in_path:Path):
     sub_path = media_dict.get("input_path").joinpath("Subs")
     media_dict["is_subs"] = sub_path.exists()
     media_dict["is_tv"] = all([object_path.is_dir() for object_path in sub_path.iterdir()])
@@ -74,7 +74,7 @@ def _folder_media_search(media_dict, output_path:Path):
     if media_dict["is_tv"]:
         for episode in media_dict.get("input_path").iterdir(): 
             if episode != sub_path and episode.suffix == ".mp4":
-                _convert_episode(episode, sub_path, output_path) 
+                _convert_episode(episode, sub_path, output_path, burn_in_path) 
 
     else:
         movie = media_dict.get("input_path").glob("*.mp4")
@@ -93,6 +93,7 @@ def _folder_media_search(media_dict, output_path:Path):
             if len(movies_dict["subs"])>1:
                 subtitler = Subtitler(movies_dict["subs"][1], movies_dict["subs"][0])
                 subtitler.clean_subs()
+                movies_dict["output_path"] = movies_dict["output_path"].with_stem(movies_dict["output_path"].stem+"-burn-in")
                 mkv_merge = MkvMerge(movies_dict)
                 mkv_merge.burn_in_convert()
                 mkv_merge.burn_in_convert()
@@ -104,24 +105,25 @@ def _folder_media_search(media_dict, output_path:Path):
             mkv_merge.no_sub_convert()
 
 
-def _find_files(input_path: Path, output_path:Path):
+def _find_files(input_path: Path, output_path:Path, burn_in_path:Path):
     for media in input_path.iterdir():
         media_dict = {
             "input_path": media
         }
         if media.is_dir():
-            _folder_media_search(media_dict, output_path)
+            _folder_media_search(media_dict, output_path,burn_in_path)
 
         else:
             pass
 
-@command()
-@option("-i", "--input-path", "input_path", type=click_path(exists=True, dir_okay=True), required=True)
-@option("-o", "--output-path", "output_path", type=click_path(exists=True, dir_okay=True), required=True)
-def main(input_path, output_path):
+
+def main():
     """the main runner for the x265 converter
     """
-    _find_files(input_path, output_path)
+    input_path=Path("/input")
+    output_path=Path("/output")
+    burn_in_path=Path("/burn")
+    _find_files(input_path, output_path,burn_in_path)
 
 if __name__ == "__main__":
-   main()
+    main()
