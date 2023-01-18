@@ -77,7 +77,7 @@ def _folder_media_search(media_dict, output_path:Path, burn_in_path:Path):
                 _convert_episode(episode, sub_path, output_path, burn_in_path) 
 
     else:
-        movie = media_dict.get("input_path").glob("*.mp4")
+        movie = list(media_dict.get("input_path").glob("*.mp4"))[0]
         if media_dict["is_subs"]:
             subs = _get_movie_sub(sub_path)
         else:
