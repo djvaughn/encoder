@@ -38,6 +38,8 @@ def _get_movie_sub(sub_path):
     sub_file_list = [sub for sub in sub_path.glob('*.srt') if _sub_file_check(sub)]
     sorted_sub_list = sorted(sub_file_list, key = lambda sub: sub.stat().st_size, reverse=True)
     largest_sub = sorted_sub_list.pop(0)
+    print("here is the subs")
+    print(sorted_sub_list)
     if sorted_sub_list and sorted_sub_list[-1].stat().st_size < 20000:
         burn_in_sub_list = sorted_sub_list.pop(-1)
     else:
