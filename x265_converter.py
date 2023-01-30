@@ -96,7 +96,6 @@ def _folder_media_search(media_dict, output_path:Path, burn_in_path:Path):
                 movies_dict["output_path"] = burn_in_path.joinpath(movie.name).with_suffix(".mkv")
                 mkv_merge = MkvMerge(movies_dict)
                 mkv_merge.burn_in_convert()
-                mkv_merge.burn_in_convert()
             else:
                 mkv_merge = MkvMerge(movies_dict)
                 mkv_merge.convert()
