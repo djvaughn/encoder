@@ -69,7 +69,10 @@ def _convert_episode(episode, sub_path, output_path, burn_in_path):
 def _folder_media_search(media_dict, output_path:Path, burn_in_path:Path):
     sub_path = media_dict.get("input_path").joinpath("Subs")
     media_dict["is_subs"] = sub_path.exists()
-    media_dict["is_tv"] = all([object_path.is_dir() for object_path in sub_path.iterdir()])
+    if media_dict["is_subs"]:
+        media_dict["is_tv"] = all([object_path.is_dir() for object_path in sub_path.iterdir()])
+    else:
+        media_dict["is_tv"] = False
 
     if media_dict["is_tv"]:
         for episode in media_dict.get("input_path").iterdir(): 
