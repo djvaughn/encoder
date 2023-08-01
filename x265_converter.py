@@ -48,13 +48,7 @@ def _get_movie_sub(sub_path):
 
 
 
-def _convert_episode(episode, sub_path, output_path, burn_in_path):
-    episode_dict = {
-        "path": episode,
-        "output_path": output_path.joinpath(episode.name).with_suffix(".mkv"),
-        "subs": _get_episode_sub(episode.stem, sub_path)
-    }
-    
+def _convert_episode(episode, burn_in_path, episode_dict):
     if len(episode_dict["subs"])>1:
         subtitler = Subtitler(episode_dict["subs"][1], episode_dict["subs"][0])
         episode_dict["output_path"] = burn_in_path.joinpath(episode.name).with_suffix(".mkv")
@@ -69,15 +63,30 @@ def _convert_episode(episode, sub_path, output_path, burn_in_path):
 def _folder_media_search(media_dict, output_path:Path, burn_in_path:Path):
     sub_path = media_dict.get("input_path").joinpath("Subs")
     media_dict["is_subs"] = sub_path.exists()
+    list_of_mp4s = list(media_dict.get("input_path").glob('*.mp4'))
+    media_dict["is_tv_episodes"] = all([True if 'S0' in video else False for video in list_of_mp4s])
     if media_dict["is_subs"]:
         media_dict["is_tv"] = all([object_path.is_dir() for object_path in sub_path.iterdir()])
+    elif media_dict["is_tv_episodes"]:
+       media_dict["is_tv"] =  media_dict["is_tv_episodes"]
     else:
         media_dict["is_tv"] = False
+    
 
     if media_dict["is_tv"]:
-        for episode in media_dict.get("input_path").iterdir(): 
-            if episode != sub_path and episode.suffix == ".mp4":
-                _convert_episode(episode, sub_path, output_path, burn_in_path) 
+        for episode in list_of_mp4s: 
+            if media_dict["is_subs"]:
+                subs = _get_episode_sub(episode.stem, sub_path)
+            else: 
+                subs = None
+            
+            episode_dict = {
+                "path": episode,
+                "output_path": output_path.joinpath(episode.name).with_suffix(".mkv"),
+                "subs": subs
+            }
+
+            _convert_episode(episode, burn_in_path, episode_dict)
 
     else:
         movie = list(media_dict.get("input_path").glob("*.mp4"))[0]
