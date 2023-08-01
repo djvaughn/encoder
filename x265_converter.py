@@ -64,7 +64,7 @@ def _folder_media_search(media_dict, output_path:Path, burn_in_path:Path):
     sub_path = media_dict.get("input_path").joinpath("Subs")
     media_dict["is_subs"] = sub_path.exists()
     list_of_mp4s = list(media_dict.get("input_path").glob('*.mp4'))
-    media_dict["is_tv_episodes"] = all([True if 'S0' in video else False for video in list_of_mp4s])
+    media_dict["is_tv_episodes"] = all([True if 'S0' in str(video) else False for video in list_of_mp4s])
     if media_dict["is_subs"]:
         media_dict["is_tv"] = all([object_path.is_dir() for object_path in sub_path.iterdir()])
     elif media_dict["is_tv_episodes"]:
