@@ -49,15 +49,18 @@ def _get_movie_sub(sub_path):
 
 
 def _convert_episode(episode, burn_in_path, episode_dict):
-    if len(episode_dict["subs"])>1:
+    if episode_dict["subs"] and len(episode_dict["subs"])>1:
         subtitler = Subtitler(episode_dict["subs"][1], episode_dict["subs"][0])
         episode_dict["output_path"] = burn_in_path.joinpath(episode.name).with_suffix(".mkv")
         subtitler.clean_subs()
         mkv_merge = MkvMerge(episode_dict)
         mkv_merge.burn_in_convert()
-    else:
+    elif episode_dict["subs"]:
         mkv_merge = MkvMerge(episode_dict)
         mkv_merge.convert()
+    else:
+        mkv_merge = MkvMerge(episode_dict)
+        mkv_merge.no_sub_convert()
 
 
 def _folder_media_search(media_dict, output_path:Path, burn_in_path:Path):
