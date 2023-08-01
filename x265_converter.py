@@ -68,6 +68,7 @@ def _folder_media_search(media_dict, output_path:Path, burn_in_path:Path):
     sub_path = media_dict.get("input_path").joinpath("Subs")
     media_dict["is_subs"] = sub_path.exists()
     list_of_mp4s = list(media_dict.get("input_path").glob('*.mp4'))
+    print(list_of_mp4s)
     pattern = r'\b'+re.escape("(S[0-9]+E[0-9]+)") +r'\b'
     media_dict["is_tv_episodes"] = all([True if re.search(pattern, str(video)) else False for video in list_of_mp4s])
     if media_dict["is_subs"]:
