@@ -1,125 +1,56 @@
 from pathlib import Path
-from mkv_converter import MkvMerge
-from subtitler import Subtitler
+from movie_converter import MovieConverter
+from tv_converter import TvConverter
+
 import re
 
-# def _rm_tree(pth):
-#     """removes the media folder
+def _search_for_sub_folders(sub_path):
+    # checking if the sub path has a bunch of sub folders.  If so, it's assumed that the media is TV Episode(s)
+    for object_path in sub_path.iterdir():
+        yield object_path.is_dir()
 
-#     Args:
-#         pth (Path): media folder path
-#     """
-#     for child in pth.glob('*'):
-#         if child.is_file():
-#             child.unlink()
-#         else:
-#             rm_tree(child)
-#     pth.rmdir()
-
-
-def _sub_file_check(sub):
-    return sub.is_file() and (("english" in sub.name.lower()) or ("eng" in sub.name.lower()))
+def _search_for_subs(media_dict):
+    sub_path = None
+    for folder in ("Subs", "Sub", "subs", "sub"):
+        if media_dict.get("input_path").joinpath(folder).exists():
+            sub_path = media_dict.get("input_path").joinpath(folder)
+            break
+    return sub_path
 
 
-def _get_episode_sub(name, sub_path):
-    episode_sub_folder = sub_path.joinpath(name)
-    sub_file_list = [sub for sub in episode_sub_folder.glob('*.srt') if _sub_file_check(sub)]
-    sorted_sub_list = sorted(sub_file_list, key = lambda sub: sub.stat().st_size, reverse=True)
-    largest_sub = sorted_sub_list.pop(0)
-    if sorted_sub_list and sorted_sub_list[-1].stat().st_size < 20000:
-        burn_in_sub_list = sorted_sub_list.pop(-1)
-    else:
-        burn_in_sub_list = None
-    if burn_in_sub_list:
-        return [largest_sub, burn_in_sub_list]
-    return [largest_sub]
+def _find_all_tv_episodes_gen(list_of_videos):
+    # checking for episode naming standards SSxEE
+    pattern = r"\b(S[0-9]+E[0-9]+)\b"
+    episode_regex = re.compile(pattern)
+    for video in list_of_videos:
+        yield episode_regex.search(str(video))
 
 
-def _get_movie_sub(sub_path):
-    sub_file_list = [sub for sub in sub_path.glob('*.srt') if _sub_file_check(sub)]
-    sorted_sub_list = sorted(sub_file_list, key = lambda sub: sub.stat().st_size, reverse=True)
-    largest_sub = sorted_sub_list.pop(0)
-    if sorted_sub_list and sorted_sub_list[-1].stat().st_size < 20000:
-        burn_in_sub_list = sorted_sub_list.pop(-1)
-    else:
-        burn_in_sub_list = None
-    if burn_in_sub_list:
-        return [largest_sub, burn_in_sub_list]
-    return [largest_sub]
-
-
-
-def _convert_episode(episode, burn_in_path, episode_dict):
-    if episode_dict["subs"] and len(episode_dict["subs"])>1:
-        subtitler = Subtitler(episode_dict["subs"][1], episode_dict["subs"][0])
-        episode_dict["output_path"] = burn_in_path.joinpath(episode.name).with_suffix(".mkv")
-        subtitler.clean_subs()
-        mkv_merge = MkvMerge(episode_dict)
-        mkv_merge.burn_in_convert()
-    elif episode_dict["subs"]:
-        mkv_merge = MkvMerge(episode_dict)
-        mkv_merge.convert()
-    else:
-        mkv_merge = MkvMerge(episode_dict)
-        mkv_merge.no_sub_convert()
+def _find_files_gen(media_dict):
+    file_exstensions = ('*.mp4', '*.mkv')
+    for file_exstension in file_exstensions:
+        yield media_dict.get('input_path').glob(file_exstension)
 
 
 def _folder_media_search(media_dict, output_path:Path, burn_in_path:Path):
-    sub_path = media_dict.get("input_path").joinpath("Subs")
-    media_dict["is_subs"] = sub_path.exists()
-    list_of_mp4s = list(media_dict.get("input_path").glob('*.mp4'))
-    pattern = r"\b(S[0-9]+E[0-9]+)\b"
-    media_dict["is_tv_episodes"] = all([True if re.search(pattern, str(video)) else False for video in list_of_mp4s])
-    if media_dict["is_subs"]:
-        media_dict["is_tv"] = all([object_path.is_dir() for object_path in sub_path.iterdir()])
-    elif media_dict["is_tv_episodes"]:
-       media_dict["is_tv"] =  media_dict["is_tv_episodes"]
-    else:
-        media_dict["is_tv"] = False
+    list_of_list_videos = list(_find_files_gen(media_dict))
+    list_of_videos = []
+    for row in list_of_list_videos:
+        list_of_videos += row
+    try:
+        is_tv =  media_dict["is_tv_episodes"] = all(_find_all_tv_episodes_gen(list_of_videos))
+    except:
+        is_tv = False
+    sub_path = _search_for_subs(media_dict)
+    if not is_tv and sub_path:
+        is_tv = all(_search_for_sub_folders(sub_path))
     
-
-    if media_dict["is_tv"]:
-        for episode in list_of_mp4s: 
-            if media_dict["is_subs"]:
-                subs = _get_episode_sub(episode.stem, sub_path)
-            else: 
-                subs = None
-            
-            episode_dict = {
-                "path": episode,
-                "output_path": output_path.joinpath(episode.name).with_suffix(".mkv"),
-                "subs": subs
-            }
-
-            _convert_episode(episode, burn_in_path, episode_dict)
-
+    if is_tv:
+        tv = TvConverter(list_of_videos, output_path, burn_in_path, sub_path=sub_path)
+        tv.run()
     else:
-        movie = list(media_dict.get("input_path").glob("*.mp4"))[0]
-        if media_dict["is_subs"]:
-            subs = _get_movie_sub(sub_path)
-        else:
-            subs = None
-        
-        movies_dict = {
-            "path": movie,
-            "output_path": output_path.joinpath(movie.name).with_suffix(".mkv"),
-            "subs": subs
-        }
-
-        if subs:
-            if len(movies_dict["subs"])>1:
-                subtitler = Subtitler(movies_dict["subs"][1], movies_dict["subs"][0])
-                subtitler.clean_subs()
-                movies_dict["output_path"] = burn_in_path.joinpath(movie.name).with_suffix(".mkv")
-                mkv_merge = MkvMerge(movies_dict)
-                mkv_merge.burn_in_convert()
-            else:
-                mkv_merge = MkvMerge(movies_dict)
-                mkv_merge.convert()
-        else:
-            mkv_merge = MkvMerge(movies_dict)
-            mkv_merge.no_sub_convert()
-
+        movie = MovieConverter(list_of_videos[0], output_path, burn_in_path, sub_path=sub_path)
+        movie.run()
 
 def _find_files(input_path: Path, output_path:Path, burn_in_path:Path):
     for media in input_path.iterdir():
