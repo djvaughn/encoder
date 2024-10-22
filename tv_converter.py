@@ -20,10 +20,6 @@ class TvConverter():
             if self.__sub_path:
                 sub_path = True
                 sub_list = self.__retrieve_subs_from_sub_dir(episode.stem)
-                if len(sub_list) > 1:
-                    self.__clean_subs(sub_list)
-                    output = self.__burn_in_path
-                    burn_in = True
             elif self.__mkv_check(episode):
                 eng_sub_track_id_list = list(self.__sub_track_gen(episode))
                 if eng_sub_track_id_list:
@@ -31,10 +27,6 @@ class TvConverter():
                     sub_tracks_location = mkv_extract.subtitle_extract(episode.stem)
                     sub_list = self.__find_sdh_and_burn_in(sub_tracks_location)
                     sub_path = True
-                    if len(sub_list) > 1:
-                        self.__clean_subs(sub_list)
-                        output = self.__burn_in_path
-                        burn_in = True
             self.__episodes_dict_list.append(self.__build_episode_dict(episode, output, sub_list, burn_in, sub_path))
         self.__merge()
 
@@ -55,10 +47,6 @@ class TvConverter():
 
     def __get_tv_sub(self, name):
         return [sub for sub in self.__sub_finder_gen(name) if  self.__sub_file_check(sub)]
-
-    def __clean_subs(self, sub_list):
-        subtitler = Subtitler(*sub_list)
-        subtitler.clean_subs()
 
     def __sub_finder_gen(self, name):
         return chain(

@@ -17,8 +17,6 @@ class MovieConverter():
     def run(self):
         if self.__sub_path:
             self.__sub_list = self.__retrieve_subs_from_sub_dir()
-            if len(self.__sub_list) > 1:
-                self.__clean_subs()
         elif self.__mkv_check():
             try:
                 eng_sub_track_id_list = list(self.__sub_track_gen())
@@ -29,8 +27,6 @@ class MovieConverter():
                 mkv_extract = MkvExtract(self.__movie, eng_sub_track_id_list)
                 sub_tracks_location = mkv_extract.subtitle_extract()
                 self.__sub_list = self.__find_sdh_and_burn_in(sub_tracks_location)
-                if len(self.__sub_list) > 1:
-                    self.__clean_subs()
 
         self.__build_movie_dict()
         self.__merge()
@@ -52,11 +48,6 @@ class MovieConverter():
 
     def __get_movie_sub(self):
         return [sub for sub in self.__sub_finder_gen() if  self.__sub_file_check(sub)]
-
-    def __clean_subs(self):
-        subtitler = Subtitler(*self.__sub_list)
-        subtitler.clean_subs()
-        self.__burn_in = True
 
 
     def __sub_finder_gen(self):
