@@ -52,7 +52,7 @@ class MovieConverter():
     def __sub_finder_gen(self):
         for sub_types in ('*.srt', '*.pgs', '*.vobsub'):
             for sub_type in sub_types:
-                yield self.__sub_path.glob(sub_type)
+                return self.__sub_path.glob(sub_type)
 
     def __sub_file_check(self, sub):
         return sub.is_file() and (("english" in sub.name.lower()) or ("eng" in sub.name.lower()))
