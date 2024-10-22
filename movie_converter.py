@@ -22,7 +22,6 @@ class MovieConverter():
                 eng_sub_track_id_list = list(self.__sub_track_gen())
             except:
                 eng_sub_track_id_list = None
-
             if eng_sub_track_id_list:
                 mkv_extract = MkvExtract(self.__movie, eng_sub_track_id_list)
                 sub_tracks_location = mkv_extract.subtitle_extract()
@@ -53,7 +52,7 @@ class MovieConverter():
     def __sub_finder_gen(self):
         for sub_types in ('*.srt', '*.pgs', '*.vobsub'):
             for sub_type in sub_types:
-                yield [self.__sub_path.glob(sub_type)]
+                yield self.__sub_path.glob(sub_type)
 
     def __sub_file_check(self, sub):
         return sub.is_file() and (("english" in sub.name.lower()) or ("eng" in sub.name.lower()))
