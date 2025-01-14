@@ -1,4 +1,3 @@
-from subtitler import Subtitler
 from mkv_tools import MkvMerge, MkvInfo, MkvExtract
 from itertools import chain
 
@@ -61,9 +60,6 @@ class TvConverter():
     def __find_sdh_and_burn_in(self, list_of_subs):
         sorted_sub_list = sorted(list_of_subs, key = lambda sub: sub.stat().st_size, reverse=True)
         largest_sub = sorted_sub_list.pop(0)
-        if sorted_sub_list and sorted_sub_list[-1].stat().st_size < 30000:
-            burn_in_sub = sorted_sub_list.pop(-1)
-            return [burn_in_sub, largest_sub]
         return [largest_sub]
 
     def __build_episode_dict(self, episode, output_path, subs, burn_in, sub_path):
